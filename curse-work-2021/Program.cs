@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Threading;
 
 namespace curse_work_2021
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Database.ReadCsv();
+            Console.WriteLine(Database.ToString());
         }
     }
 }

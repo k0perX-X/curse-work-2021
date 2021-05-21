@@ -6,4 +6,16 @@
     <RootNamespace>curse_work_2021</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="LumenWorks.Framework.IO" Version="3.8.0" />
+    <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
+    <PackageReference Include="mgholam.fastCSV" Version="2.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Russian_cities.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
