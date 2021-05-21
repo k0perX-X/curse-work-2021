@@ -7,14 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LumenWorks.Framework.IO" Version="3.8.0" />
-    <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
-    <PackageReference Include="mgholam.fastCSV" Version="2.0.9" />
+    <None Remove="Russian_cities.csv" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Russian_cities.csv">
+    <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Russian_cities.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Database.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

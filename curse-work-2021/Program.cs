@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Threading;
 
-namespace curse_work_2021
+namespace Database
 {
     internal class Program
     {
         private static void Main(string[] args)
         {
-            Database.ReadCsv();
-            Console.WriteLine(Database.ToString());
+            Processing.ReadCsv();
+            Console.WriteLine(Processing.DatabaseFindToString());
+            Console.WriteLine(Processing.DatabaseCitiesToString());
+            Console.ReadKey();
         }
     }
 }
