@@ -83,10 +83,13 @@ namespace Database
 
         public static void ReadCsv()
         {
+            // инициализация коллекций
             databaseFind = new Dictionary<char, List<City>>();
+            databaseUsers = new Dictionary<string, User>();
+
             // open the file "data.csv" which is a CSV file with headers
             using (CsvReader csv =
-            new CsvReader(new StreamReader("Processing.csv"), true))
+            new CsvReader(new StreamReader("Database.csv"), true))
             {
                 List<string> cities = new List<string>();
                 //int fieldCount = csv.FieldCount;
@@ -101,6 +104,10 @@ namespace Database
                     cities.Add(csv[2]);
                 }
                 databaseCities = cities.ToArray();
+                for (int i = 0; i < databaseCities.Length; i++)
+                {
+                    databaseCities[i] = databaseCities[i].ToLower();
+                }
             }
         }
 
@@ -118,6 +125,7 @@ namespace Database
         public static void Get(string city, string id, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
         {
+            // изначальные значения
             outCity = null;
             letterNumberFromEnd = 0;
             cityIsUsed = false;
@@ -128,9 +136,10 @@ namespace Database
             photoUrl = null;
             coordinateCity = default;
 
-            if (databaseCities.Contains(city.Split()[0]))
+            city = city.Split()[0].ToLower();
+
+            if (databaseCities.Contains(city))
             {
-                city = city.Split()[0].ToLower();
                 if (!databaseUsers.ContainsKey(id))
                     databaseUsers.Add(id, new User(id));
                 if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer))

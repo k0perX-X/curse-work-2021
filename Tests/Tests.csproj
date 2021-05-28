@@ -17,4 +17,10 @@
     <ProjectReference Include="..\curse-work-2021\Database.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Database.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
