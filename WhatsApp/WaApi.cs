@@ -43,5 +43,16 @@ namespace WhatsApp
         };
             return await SendRequest("sendMessage", JsonConvert.SerializeObject(data));
         }
+        public async Task<string> CreateGroup(string author)
+        {
+            var phone = author.Replace("@c.us", "");
+            var data = new Dictionary<string, string>()
+        {
+            { "groupName", "Group C#"},
+            { "phones", phone },
+            { "messageText", "This is your group." }
+        };
+            return await SendRequest("group", JsonConvert.SerializeObject(data));
+        }
     }
 }
