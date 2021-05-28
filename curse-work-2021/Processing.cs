@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.Serialization.Formatters;
 using LumenWorks.Framework.IO.Csv;
 
 namespace Database
@@ -13,6 +15,14 @@ namespace Database
         private static Dictionary<char, List<City>> databaseFind;
         private static string[] databaseCities;
         private static Dictionary<string, User> databaseUsers;
+
+        private static string[] doubleNameCities = new[]
+        {
+            "нижняя", "петров", "сухой", "набережные", "верхняя", "новая", "красное", "малая", "белая", "советская",
+            "минеральные", "новый", "старая", "сергиев", "старый", "западная", "красный", "вятские", "верхний",
+            "мариинский", "гаврилов", "большой", "полярные", "лодейное", "дагестанские", "горячий", "сосновый",
+            "вышний", "нижние", "великие", "великий", "павловский", "нижний",
+        };
 
         private class City
         {
@@ -44,16 +54,20 @@ namespace Database
 
             private DateTime _lastCall;
 
+            private Dictionary<char, List<City>> _UsedCities;
+
+            public char nextLetter { get; set; }
+
             public Dictionary<char, List<City>> UsedCities
             {
                 get
                 {
-                    return UsedCities;
+                    return _UsedCities;
                 }
 
                 set
                 {
-                    UsedCities = value;
+                    _UsedCities = value;
                     _lastCall = DateTime.Now;
                 }
             }
@@ -61,7 +75,11 @@ namespace Database
             public User(string id)
             {
                 _id = id;
-                UsedCities = new Dictionary<char, List<City>>();
+                _UsedCities = new Dictionary<char, List<City>>();
+                foreach (char c1 in Enumerable.Range('а', 'я' - 'а' + 1).Select(c => (char)c))
+                {
+                    _UsedCities.Add(c1, new List<City>());
+                }
                 _lastCall = DateTime.Now;
             }
         }
@@ -121,27 +139,45 @@ namespace Database
         /// <param name="mapUrl"> Ссылка на место на карте</param>
         /// <param name="coordinateCity"> Координаты города (latitude - широта, longitude - долгота)</param>
         /// <param name="photoUrl"> Ссылка на фото из города</param>
-        /// <param name="outCity"> null значит города не существует в бд, '' - боту нечего отвечать </param>
-        public static void Get(string city, string id, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
+        /// <param name="outCity"> null значит города не существует в бд, "" - боту нечего отвечать </param>
+        /// <param name="onLastLetter"> ответил ли пользователь на последнюю букву предыдущего слова </param>
+        public static void Get(string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
             outCity = null;
             letterNumberFromEnd = 0;
+            onLastLetter = true;
             cityIsUsed = false;
             wikiUrl = null;
             yandexUrl = null;
             googleUrl = null;
             mapUrl = null;
             photoUrl = null;
-            coordinateCity = default;
+            coordinateCity.longitude = default;
+            coordinateCity.latitude = default;
 
-            city = city.Split()[0].ToLower();
+            string[] splittedCities = city.Split();
+            splittedCities[0] = splittedCities[0].ToLower();
+            splittedCities[1] = splittedCities[1].ToLower();
+
+            if (doubleNameCities.Contains(splittedCities[0].ToLower()))
+                city = splittedCities[0] + " " + splittedCities[1];
+            else
+                city = splittedCities[0];
 
             if (databaseCities.Contains(city))
             {
                 if (!databaseUsers.ContainsKey(id))
                     databaseUsers.Add(id, new User(id));
+                else
+                {
+                    if (city[0] != databaseUsers[id].nextLetter)
+                    {
+                        onLastLetter = false;
+                        return;
+                    }
+                }
                 if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer))
                 {
                     outCity = "";
@@ -151,11 +187,36 @@ namespace Database
                 {
                     foreach (char c in city)
                     {
-                        List<City> except = databaseFind[c].Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
-                        if (except.Count != 0)
+                        if (databaseFind.ContainsKey(c))
                         {
-                            outCity = except[0];
-                            databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
+                            List<City> except = databaseFind[c]
+                                .Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                            if (except.Count != 0)
+                            {
+                                outCity = except[0];
+                                databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
+                                databaseUsers[id].UsedCities[c].Add(new City() { Name = except[0] });
+                                bool userWin = true;
+                                for (int i = except[0].Name.Length - 1; i > 0; i--)
+                                {
+                                    databaseUsers[id].nextLetter = except[0].Name[i];
+                                    if (databaseFind.ContainsKey(databaseUsers[id].nextLetter))
+                                        if (databaseFind[databaseUsers[id].nextLetter].Except(databaseUsers[id].UsedCities[databaseUsers[id].nextLetter], CityEqualityComparer).ToList().Count > 0)
+                                        {
+                                            userWin = false;
+                                            break;
+                                        }
+                                }
+
+                                if (userWin)
+                                {
+                                    outCity = "";
+                                }
+                            }
+                            else
+                            {
+                                letterNumberFromEnd++;
+                            }
                         }
                     }
                 }
@@ -190,7 +251,8 @@ namespace Database
             googleUrl = null;
             mapUrl = null;
             photoUrl = null;
-            coordinateCity = default;
+            coordinateCity.longitude = default;
+            coordinateCity.latitude = default;
         }
 
         public static string DatabaseFindToString()
