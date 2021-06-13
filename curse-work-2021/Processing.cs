@@ -135,7 +135,6 @@ namespace Database
             var u1 = 1.0 - random.NextDouble();
             var u2 = 1.0 - random.NextDouble();
             var rand = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
-
             while (!(left <= rand && rand < right))
             {
                 u1 = 1.0 - random.NextDouble();
@@ -221,6 +220,7 @@ namespace Database
                                 .Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                             if (except.Count != 0)
                             {
+                                double n = NormalRandom();
                                 int numberOfCity =
                                     (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
                                 outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще

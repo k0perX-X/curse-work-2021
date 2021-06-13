@@ -42,16 +42,24 @@ namespace Telegram
             if (e.Message.Text != null)
             {
                 logging.INFO($"Telegram: Chat: {e.Message.Chat.Id}, Text: {e.Message.Text}");
-                Processing.Get(e.Message.Text, "Telegram." + e.Message.Chat.Id.ToString(), out bool onLastLetter, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
+                Processing.Get(e.Message.Text, "Telegram." + e.Message.Chat.Id.ToString(), out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl);
-                if (outCity == null)
-                    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву");
+                //if (outCity == null)
+                //    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву");
+                //else if (onLastLetter == false)
+                //    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города, попробуйте ещё раз");
+                //    else if (cityIsUsed == true)
+                //    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Вы уже использовали город {e.Message.Text}, попробуйте ввести другой город на эту же букву");
+                //    else await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"{outCity}");
+
+                if (cityIsUsed == true)
+                    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Вы уже использовали город {e.Message.Text}, попробуйте ввести другой город на эту же букву");
                 else if (onLastLetter == false)
                     await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города, попробуйте ещё раз");
-                    else if (cityIsUsed == true)
-                    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Вы уже использовали город {e.Message.Text}, попробуйте ввести другой город на эту же букву");
-                    else await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"{outCity}");
-            }
+                else if (outCity == null)
+                    await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву");
+                else await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"{outCity}");
+            }   
         }
     }
 }
