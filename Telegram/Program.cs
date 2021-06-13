@@ -37,8 +37,7 @@ namespace Telegram
             if (e.Message.Text != null)
             {
                 Console.WriteLine($"Получено письмо из чата {e.Message.Chat.Id}.");
-
-                Processing.Get(e.Message.Text, e.Message.MediaGroupId, out bool onLastLetter, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
+                Processing.Get(e.Message.Text, "Telegram." + e.Message.Chat.Id.ToString(), out bool onLastLetter, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl);
                 if (outCity == null)
                     await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву");
