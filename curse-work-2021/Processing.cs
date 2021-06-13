@@ -226,7 +226,7 @@ namespace Database
                                 outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
 
                                 databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
+                                databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity.ToLower() });
 
                                 bool userWin = true; // проверка на победу + nextLetter
                                 for (int i = outCity.Length - 1; i > 0; i--)
