@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace Database
+﻿namespace Database
 {
     public class Logging
     {
@@ -23,7 +20,7 @@ namespace Database
             public static implicit operator byte(LevelLogging d) => d._numberOfLevel;
         }
 
-        public Logging(LevelLogging levelLogging, string pathToLogFile, bool writeInConsole = false)
+        public Logging(LevelLogging levelLogging, string pathToLogFile)
         {
             if (levelLogging < 0 || levelLogging > 4)
                 levelLogging = new(1);
@@ -32,66 +29,44 @@ namespace Database
             if (!fileInf.Exists)
                 fileInf.Create();
             _pathToLogFile = pathToLogFile;
-            _writeInConsole = writeInConsole;
         }
 
         private string _pathToLogFile;
         private int _levelLogging;
-        private bool _writeInConsole;
 
         public void DEBUG(string message = "")
         {
             if (_levelLogging >= Level.DEBUG)
-            {
-                string mes = $"{DateTime.Now.ToShortTimeString()} DEBUG: {message}";
-                File.AppendAllText(_pathToLogFile, mes);
-                if (_writeInConsole)
-                    Console.WriteLine(mes);
-            }
+                File.AppendAllText(_pathToLogFile,
+                    $"{DateTime.Now.ToShortTimeString()} DEBUG: {message}");
         }
 
         public void INFO(string message = "")
         {
             if (_levelLogging >= Level.INFO)
-            {
-                string mes = $"{DateTime.Now.ToShortTimeString()} INFO: {message}";
-                File.AppendAllText(_pathToLogFile, mes);
-                if (_writeInConsole)
-                    Console.WriteLine(mes);
-            }
+                File.AppendAllText(_pathToLogFile,
+                    $"{DateTime.Now.ToShortTimeString()} INFO: {message}");
         }
 
         public void ERROR(string message = "")
         {
             if (_levelLogging >= Level.ERROR)
-            {
-                string mes = $"{DateTime.Now.ToShortTimeString()} ERROR: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
-                if (_writeInConsole)
-                    Console.WriteLine(mes);
-            }
+                File.AppendAllText(_pathToLogFile,
+                    $"{DateTime.Now.ToShortTimeString()} ERROR: {message}");
         }
 
         public void WARNING(string message = "")
         {
             if (_levelLogging >= Level.WARNING)
-            {
-                string mes = $"{DateTime.Now.ToShortTimeString()} WARNING: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
-                if (_writeInConsole)
-                    Console.WriteLine(mes);
-            }
+                File.AppendAllText(_pathToLogFile,
+                    $"{DateTime.Now.ToShortTimeString()} WARNING: {message}");
         }
 
         public void FATAL(string message = "")
         {
             if (_levelLogging >= Level.FATAL)
-            {
-                string mes = $"{DateTime.Now.ToShortTimeString()} FATAL: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
-                if (_writeInConsole)
-                    Console.WriteLine(mes);
-            }
+                File.AppendAllText(_pathToLogFile,
+                    $"{DateTime.Now.ToShortTimeString()} FATAL: {message}");
         }
     }
 }
