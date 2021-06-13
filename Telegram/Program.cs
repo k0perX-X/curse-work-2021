@@ -7,20 +7,17 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Telegram
 {
-    class Program
+    internal class Program
     {
         private static Logging logging = new Logging(Logging.Level.DEBUG, "Telegram.log", true);
 
-        static TelegramBotClient botClient;
-        static Bot.Types.User me;
+        private static TelegramBotClient botClient;
+        private static Bot.Types.User me;
 
-    
-
-
-        static void Main()
+        private static void Main()
         {
-            Processing.ReadCsv();   
-            botClient = new TelegramBotClient(Configuration.BotToken);
+            Processing.ReadCsv();
+            botClient = new TelegramBotClient("1836141461:AAFgV0eYTUZ-7XdI0p8M7_DnHL1eO0wNBCY");
 
             me = botClient.GetMeAsync().Result;
 
@@ -37,7 +34,7 @@ namespace Telegram
             //    var message = ev.CallbackQuery.Message;
             //    if (ev.CallbackQuery.Data == "callback1")
             //    {
-            //        // сюда то что тебе нужно сделать при нажатии на первую кнопку 
+            //        // сюда то что тебе нужно сделать при нажатии на первую кнопку
             //    }
             //    else
             //    if (ev.CallbackQuery.Data == "callback2")
@@ -55,16 +52,14 @@ namespace Telegram
             botClient.StopReceiving();
 
             Console.ReadKey();
-
-
         }
 
-        static async void Bot_FirstOnMessage(object sender, MessageEventArgs e)
+        private static async void Bot_FirstOnMessage(object sender, MessageEventArgs e)
         {
             await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: "Введите первый город");
         }
 
-        static async void Bot_OnMessage(object sender, MessageEventArgs e)
+        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
         {
             if (e.Message.Text != null)
             {
@@ -85,11 +80,16 @@ namespace Telegram
                     await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города, попробуйте ещё раз");
                 else if (outCity == null)
                     await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву");
-                else await botClient.SendTextMessageAsync(chatId: e.Message.Chat, text: $"{outCity}", replyToMessageId: e.Message.MessageId);
-                
-
-            }   
+                else await botClient.SendTextMessageAsync(
+                    chatId: e.Message.Chat,
+                    text: $"{outCity}",
+                    replyToMessageId: e.Message.MessageId,
+                    replyMarkup: new InlineKeyboardMarkup(
+                        InlineKeyboardButton.WithUrl("Repository", "https://github.com/TelegramBots/Telegram.Bot"))
+                    );
+            }
         }
+
         private void processUpdate(Bot.Types.Update update)
         {
             switch (update.Type)
@@ -99,43 +99,35 @@ namespace Telegram
                     switch (text)
                     {
                         case TEXT_1:
-                            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Кнопка 1",  replyMarkup:  GetButtons());
+                            botClient.SendTextMessageAsync(update.Message.Chat.Id, "Кнопка 1", replyMarkup: GetButtons());
                             break;
+
                         case TEXT_2:
                             botClient.SendTextMessageAsync(update.Message.Chat.Id, "Кнопка 2", replyMarkup: GetButtons());
                             break;
+
                         case TEXT_3:
                             botClient.SendTextMessageAsync(update.Message.Chat.Id, "Кнопка 3", replyMarkup: GetButtons());
                             break;
+
                         case TEXT_4:
                             botClient.SendTextMessageAsync(update.Message.Chat.Id, "Кнопка 4", replyMarkup: GetButtons());
                             break;
                     }
                     botClient.SendTextMessageAsync(update.Message.Chat.Id, "Receive text:" + text, replyMarkup: GetButtons());
                     break;
-                default:  Console.WriteLine(update.Type + "Not implemented!");
+
+                default:
+                    Console.WriteLine(update.Type + "Not implemented!");
                     break;
             }
         }
 
+        private const string TEXT_1 = "Один";
+        private const string TEXT_2 = "Два";
+        private const string TEXT_3 = "Три";
+        private const string TEXT_4 = "Четыре";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-            const string TEXT_1 = "Один";
-            const string TEXT_2 = "Два";
-            const string TEXT_3 = "Три";
-            const string TEXT_4 = "Четыре";
         private Bot.Types.ReplyMarkups.IReplyMarkup GetButtons()
         {
             return new Bot.Types.ReplyMarkups.ReplyKeyboardMarkup
