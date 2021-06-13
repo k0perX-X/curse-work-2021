@@ -66,7 +66,7 @@ namespace Database
             if (_levelLogging >= Level.ERROR)
             {
                 string mes = $"{DateTime.Now.ToShortTimeString()} ERROR: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
+                File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
             }
@@ -77,7 +77,7 @@ namespace Database
             if (_levelLogging >= Level.WARNING)
             {
                 string mes = $"{DateTime.Now.ToShortTimeString()} WARNING: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
+                File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
             }
@@ -88,7 +88,7 @@ namespace Database
             if (_levelLogging >= Level.FATAL)
             {
                 string mes = $"{DateTime.Now.ToShortTimeString()} FATAL: {message}";
-                File.AppendAllText(_pathToLogFile,, mes);
+                File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
             }
