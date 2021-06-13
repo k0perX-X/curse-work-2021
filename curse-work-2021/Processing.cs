@@ -15,6 +15,7 @@ namespace Database
         private static Dictionary<char, List<City>> databaseFind;
         private static string[] databaseCities;
         private static Dictionary<string, User> databaseUsers;
+        private static Random random = new Random();
 
         private static string[] doubleNameCities = new[]
         {
@@ -129,6 +130,23 @@ namespace Database
             }
         }
 
+        public static double NormalRandom(double mu = 0, double sigma = 1, double left = -1.7, double right = 1.3)
+        {
+            var u1 = 1.0 - random.NextDouble();
+            var u2 = 1.0 - random.NextDouble();
+            var rand = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+
+            while (rand >= left && rand <= right)
+            {
+                u1 = 1.0 - random.NextDouble();
+                u2 = 1.0 - random.NextDouble();
+                rand = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+            }
+
+            rand = mu + sigma * rand;
+            return (rand - left) / Math.Abs(right - left);
+        }
+
         /// <param name="city"> Город отправленный пользователем </param>
         /// <param name="id"> ID пользователя (в начале советую писать из какого он мессенджера) </param>
         /// <param name="cityIsUsed"> Был ли использован этот город пользователем ранее </param>
@@ -158,27 +176,33 @@ namespace Database
             coordinateCity.latitude = default;
 
             string[] splittedCities = city.Split();
-            splittedCities[0] = splittedCities[0].ToLower();
-            splittedCities[1] = splittedCities[1].ToLower();
-
-            if (doubleNameCities.Contains(splittedCities[0].ToLower()))
-                city = splittedCities[0] + " " + splittedCities[1];
+            if (splittedCities.Length > 1)
+            {
+                splittedCities[0] = splittedCities[0].ToLower();
+                splittedCities[1] = splittedCities[1].ToLower();
+                // если название города состоит из 2 слов
+                if (doubleNameCities.Contains(splittedCities[0].ToLower()))
+                    city = splittedCities[0] + " " + splittedCities[1];
+                else
+                    city = splittedCities[0];
+            }
             else
+            {
                 city = splittedCities[0];
-
+            }
             if (databaseCities.Contains(city))
             {
                 if (!databaseUsers.ContainsKey(id))
-                    databaseUsers.Add(id, new User(id));
+                    databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
                 else
                 {
-                    if (city[0] != databaseUsers[id].nextLetter)
+                    if (city[0] != databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
                     {
                         onLastLetter = false;
                         return;
                     }
                 }
-                if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer))
+                if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
                 {
                     outCity = "";
                     cityIsUsed = true;
@@ -193,9 +217,10 @@ namespace Database
                                 .Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                             if (except.Count != 0)
                             {
-                                outCity = except[0];
+                                int numberOfCity = (int)Math.Round((NormalRandom() - 1 / (except.Count * 2)) * except.Count);
+                                outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
                                 databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                databaseUsers[id].UsedCities[c].Add(new City() { Name = except[0] });
+                                databaseUsers[id].UsedCities[c].Add(new City() { Name = except[numberOfCity] });
                                 bool userWin = true;
                                 for (int i = except[0].Name.Length - 1; i > 0; i--)
                                 {
