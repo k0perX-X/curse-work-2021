@@ -150,6 +150,7 @@ namespace Database
         /// <param name="city"> Город отправленный пользователем </param>
         /// <param name="id"> ID пользователя (в начале советую писать из какого он мессенджера) </param>
         /// <param name="cityIsUsed"> Был ли использован этот город пользователем ранее </param>
+        /// <param name="nextLetter"> Буква на которую должен отвечать пользователь</param>
         /// <param name="letterNumberFromEnd"> номер буквы с конца на которую бот возвращает значение (0 = ответ на последнюю букву)</param>
         /// <param name="wikiUrl"> Ссылка на википедию города</param>
         /// <param name="yandexUrl"> Ссылка на запрос в яндексе по городу</param>
@@ -159,7 +160,7 @@ namespace Database
         /// <param name="photoUrl"> Ссылка на фото из города</param>
         /// <param name="outCity"> null значит города не существует в бд, "" - боту нечего отвечать </param>
         /// <param name="onLastLetter"> ответил ли пользователь на последнюю букву предыдущего слова </param>
-        public static void Get(string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl,
+        public static void Get(string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
@@ -172,6 +173,7 @@ namespace Database
             googleUrl = null;
             mapUrl = null;
             photoUrl = null;
+            nextLetter = default;
             coordinateCity.longitude = default;
             coordinateCity.latitude = default;
 
@@ -204,9 +206,9 @@ namespace Database
                         return;
                     }
                 }
+
                 if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
                 {
-                    outCity = "";
                     cityIsUsed = true;
                 }
                 else
@@ -219,17 +221,21 @@ namespace Database
                                 .Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                             if (except.Count != 0)
                             {
-                                int numberOfCity = (int)Math.Round((NormalRandom() - (1 / (except.Count * 2))) * except.Count);
+                                int numberOfCity =
+                                    (int)Math.Round((NormalRandom() - 1 / (except.Count * 2)) * except.Count);
                                 outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+
                                 databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                databaseUsers[id].UsedCities[c].Add(new City() { Name = except[numberOfCity] });
-                                bool userWin = true;
-                                for (int i = except[0].Name.Length - 1; i > 0; i--)
+                                databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
+
+                                bool userWin = true; // проверка на победу + nextLetter
+                                for (int i = outCity.Length - 1; i > 0; i--)
                                 {
-                                    databaseUsers[id].nextLetter = except[0].Name[i];
-                                    if (databaseFind.ContainsKey(databaseUsers[id].nextLetter))
-                                        if (databaseFind[databaseUsers[id].nextLetter].Except(databaseUsers[id].UsedCities[databaseUsers[id].nextLetter], CityEqualityComparer).ToList().Count > 0)
+                                    nextLetter = outCity[i];
+                                    if (databaseFind.ContainsKey(nextLetter))
+                                        if (databaseFind[nextLetter].Except(databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
                                         {
+                                            databaseUsers[id].nextLetter = nextLetter;
                                             userWin = false;
                                             break;
                                         }
