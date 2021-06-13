@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Xml.Serialization;
 
@@ -10,6 +12,7 @@ namespace Database
         {
             Processing.ReadCsv();
             string s = Console.ReadLine();
+
             while (s.Split()[0] != "exit")
             {
                 Processing.Get(s, "Test", out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd,
