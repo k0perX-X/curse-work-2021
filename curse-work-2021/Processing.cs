@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -29,6 +30,13 @@ namespace Database
         {
             public string Name;
             public int Population;
+            public string GoogleUrl;
+            public string YandexUrl;
+            public string WikiUrl;
+            public string PicUrl;
+            public string MapUrl;
+            public float Latitude;
+            public float Longitude;
 
             public static implicit operator string(City c) => c.Name;
         }
@@ -108,7 +116,7 @@ namespace Database
 
             // open the file "data.csv" which is a CSV file with headers
             using (CsvReader csv =
-            new CsvReader(new StreamReader("Database.csv"), true))
+            new CsvReader(new StreamReader("NewDatabase.csv"), true))
             {
                 List<string> cities = new List<string>();
                 //int fieldCount = csv.FieldCount;
@@ -119,7 +127,19 @@ namespace Database
                     {
                         databaseFind.Add(csv[1][0], new List<City>());
                     }
-                    databaseFind[csv[1][0]].Add(new City { Name = csv[2], Population = int.Parse(csv[3]) });
+                    Debug.Print($"{csv[2]} {csv[3]} {csv[4]} {csv[5]} {csv[6]} {csv[7]} {csv[8]} {csv[9]} {csv[10]}");
+                    databaseFind[csv[1][0]].Add(new City
+                    {
+                        Name = csv[2],
+                        Population = int.Parse(csv[3]),
+                        GoogleUrl = csv[4],
+                        YandexUrl = csv[5],
+                        WikiUrl = csv[6],
+                        PicUrl = csv[7],
+                        MapUrl = csv[8],
+                        Latitude = float.Parse(csv[9].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
+                        Longitude = float.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture)
+                    });
                     cities.Add(csv[2]);
                 }
                 databaseCities = cities.ToArray();
@@ -244,6 +264,17 @@ namespace Database
                                 if (userWin)
                                 {
                                     outCity = "";
+                                }
+                                else
+                                {
+                                    City outCityClass = except[numberOfCity];
+                                    wikiUrl = outCityClass.WikiUrl;
+                                    yandexUrl = outCityClass.YandexUrl;
+                                    googleUrl = outCityClass.GoogleUrl;
+                                    mapUrl = outCityClass.MapUrl;
+                                    photoUrl = outCityClass.PicUrl;
+                                    coordinateCity.longitude = outCityClass.Longitude;
+                                    coordinateCity.latitude = outCityClass.Latitude;
                                 }
                             }
                             else
