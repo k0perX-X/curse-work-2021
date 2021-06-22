@@ -5,16 +5,16 @@ using Telegram.Bot.Args;
 using System.Collections.Generic;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Telegram
+namespace TelegramBot
 {
-    internal class Program
+    public class Program
     {
         private static readonly Logging _logging = new Logging(Logging.Level.DEBUG, "Telegram.log", true);
 
         private static TelegramBotClient _botClient;
-        private static Bot.Types.User _me;
+        private static Telegram.Bot.Types.User _me;
 
-        private static void Main()
+        public static void Main()
         {
             Processing.ReadCsv();
             _botClient = new TelegramBotClient(Configuration.BotToken);
@@ -58,7 +58,7 @@ namespace Telegram
                         text: outCity + $"\nMore|{outCity}\n|{wikiUrl ?? ""}\n|{yandexUrl ?? ""}\n|{googleUrl ?? ""}\n|{mapUrl ?? ""}\n|{coordinateCity.latitude}\n|{coordinateCity.longitude}\n|{photoUrl ?? ""}",
                         replyToMessageId: e.Message.MessageId,
                         replyMarkup: new InlineKeyboardMarkup(
-                            InlineKeyboardButton.WithCallbackData("Больше информации о городе", $"More|{outCity}|{wikiUrl ?? ""}|{yandexUrl ?? ""}|{googleUrl ?? ""}|{mapUrl ?? ""}")
+                            InlineKeyboardButton.WithCallbackData("Больше информации о городе", $"More|{outCity}")
                         ));
             }
         }

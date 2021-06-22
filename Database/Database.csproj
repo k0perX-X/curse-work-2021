@@ -3,15 +3,16 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>TelegramBot</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Telegram.Bot" Version="16.0.0" />
+    <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Database\Database.csproj" />
+    <None Update="NewDatabase.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
