@@ -37,8 +37,8 @@ namespace Database
             public string WikiUrl;
             public string PicUrl;
             public string MapUrl;
-            public float Latitude;
-            public float Longitude;
+            public decimal Latitude;
+            public decimal Longitude;
 
             public static implicit operator string(City c) => c.Name;
         }
@@ -139,8 +139,8 @@ namespace Database
                         WikiUrl = csv[6],
                         PicUrl = csv[7],
                         MapUrl = csv[8],
-                        Latitude = float.Parse(csv[9].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
-                        Longitude = float.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture)
+                        Latitude = decimal.Parse(csv[9].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
+                        Longitude = decimal.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture)
                     });
                     cities.Add(csv[2]);
                 }
@@ -182,7 +182,7 @@ namespace Database
         /// <param name="outCity"> null значит города не существует в бд, "" - боту нечего отвечать </param>
         /// <param name="onLastLetter"> ответил ли пользователь на последнюю букву предыдущего слова </param>
         public static void Get(string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
-            out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
+            out string yandexUrl, out string googleUrl, out string mapUrl, out (decimal latitude, decimal longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
             outCity = null;
@@ -248,13 +248,8 @@ namespace Database
                                     (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
                                 outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
 
-<<<<<<< HEAD
                                 _databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
-=======
-                                databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity.ToLower() });
->>>>>>> ab90a8368484cbb56f7ecc475e71a8dbf7396ac7
+                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity.ToLower() });
 
                                 bool userWin = true; // проверка на победу + nextLetter
                                 for (int i = outCity.Length - 1; i > 0; i--)
@@ -313,9 +308,9 @@ namespace Database
         /// <param name="outCity"> null значит города не существует в бд, '' - все города отгаданы</param>
         /// <param name="coordinateUser"> latitude - широта, longitude - долгота</param>
         /// <param name="searchRadius"> в километрах</param>
-        public static void Get(string city, string id, (double latitude, double longitude) coordinateUser, double searchRadius,
+        public static void Get(string city, string id, (decimal latitude, decimal longitude) coordinateUser, double searchRadius,
             out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
-            out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
+            out string yandexUrl, out string googleUrl, out string mapUrl, out (decimal latitude, decimal longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
             outCity = null;
@@ -377,8 +372,8 @@ namespace Database
                             foreach (City city1 in except)
                             {
                                 double alpha2 = Math.Pow((searchRadius * 180d) / (Math.PI * 6371d), 2);
-                                if (Math.Pow(city1.Latitude - coordinateUser.latitude, 2) +
-                                    Math.Pow(city1.Longitude - coordinateUser.longitude, 2) > alpha2)
+                                if (Math.Pow((double)(city1.Latitude - coordinateUser.latitude), 2) +
+                                    Math.Pow((double)(city1.Longitude - coordinateUser.longitude), 2) > alpha2)
                                 {
                                     except.Remove(city1);
                                 }
