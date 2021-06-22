@@ -13,12 +13,14 @@ namespace Database
 {
     public static class Processing
     {
-        private static Dictionary<char, List<City>> databaseFind;
-        private static string[] databaseCities;
-        private static Dictionary<string, User> databaseUsers;
-        private static Random random = new Random();
+        private static Dictionary<char, List<City>> _databaseFind;
+        private static string[] _databaseCities;
+        private static Dictionary<string, User> _databaseUsers;
+        private static readonly Random random = new Random();
 
-        private static string[] doubleNameCities = new[]
+        public static Dictionary<char, List<City>> DatabaseFind => _databaseFind; //Внешний доступ к базе
+
+        private static readonly string[] DoubleNameCities = new[]
         {
             "нижняя", "петров", "сухой", "набережные", "верхняя", "новая", "красное", "малая", "белая", "советская",
             "минеральные", "новый", "старая", "сергиев", "старый", "западная", "красный", "вятские", "верхний",
@@ -26,7 +28,7 @@ namespace Database
             "вышний", "нижние", "великие", "великий", "павловский", "нижний",
         };
 
-        private class City
+        public class City
         {
             public string Name;
             public int Population;
@@ -106,13 +108,13 @@ namespace Database
             }
         }
 
-        private static CityEqualityComparerClass CityEqualityComparer = new CityEqualityComparerClass();
+        private static readonly CityEqualityComparerClass CityEqualityComparer = new CityEqualityComparerClass();
 
         public static void ReadCsv()
         {
             // инициализация коллекций
-            databaseFind = new Dictionary<char, List<City>>();
-            databaseUsers = new Dictionary<string, User>();
+            _databaseFind = new Dictionary<char, List<City>>();
+            _databaseUsers = new Dictionary<string, User>();
 
             // open the file "data.csv" which is a CSV file with headers
             using (CsvReader csv =
@@ -123,12 +125,12 @@ namespace Database
                 //string[] headers = csv.GetFieldHeaders();
                 while (csv.ReadNextRecord())
                 {
-                    if (!databaseFind.ContainsKey(csv[1][0]))
+                    if (!_databaseFind.ContainsKey(csv[1][0]))
                     {
-                        databaseFind.Add(csv[1][0], new List<City>());
+                        _databaseFind.Add(csv[1][0], new List<City>());
                     }
                     Debug.Print($"{csv[2]} {csv[3]} {csv[4]} {csv[5]} {csv[6]} {csv[7]} {csv[8]} {csv[9]} {csv[10]}");
-                    databaseFind[csv[1][0]].Add(new City
+                    _databaseFind[csv[1][0]].Add(new City
                     {
                         Name = csv[2],
                         Population = int.Parse(csv[3]),
@@ -142,10 +144,10 @@ namespace Database
                     });
                     cities.Add(csv[2]);
                 }
-                databaseCities = cities.ToArray();
-                for (int i = 0; i < databaseCities.Length; i++)
+                _databaseCities = cities.ToArray();
+                for (int i = 0; i < _databaseCities.Length; i++)
                 {
-                    databaseCities[i] = databaseCities[i].ToLower();
+                    _databaseCities[i] = _databaseCities[i].ToLower();
                 }
             }
         }
@@ -202,7 +204,7 @@ namespace Database
                 splittedCities[0] = splittedCities[0].ToLower();
                 splittedCities[1] = splittedCities[1].ToLower();
                 // если название города состоит из 2 слов
-                if (doubleNameCities.Contains(splittedCities[0].ToLower()))
+                if (DoubleNameCities.Contains(splittedCities[0].ToLower()))
                     city = splittedCities[0] + " " + splittedCities[1];
                 else
                     city = splittedCities[0];
@@ -213,20 +215,21 @@ namespace Database
             }
 
             city = city.ToLower();
-            if (databaseCities.Contains(city))
+            if (_databaseCities.Contains(city))
             {
-                if (!databaseUsers.ContainsKey(id))
-                    databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
+                outCity = "";
+                if (!_databaseUsers.ContainsKey(id))
+                    _databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
                 else
                 {
-                    if (city[0] != databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
+                    if (city[0] != _databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
                     {
                         onLastLetter = false;
                         return;
                     }
                 }
 
-                if (databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
+                if (_databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
                 {
                     cityIsUsed = true;
                 }
@@ -234,10 +237,10 @@ namespace Database
                 {
                     foreach (char c in city)
                     {
-                        if (databaseFind.ContainsKey(c))
+                        if (_databaseFind.ContainsKey(c))
                         {
-                            List<City> except = databaseFind[c]
-                                .Except(databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                            List<City> except = _databaseFind[c]
+                                .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                             if (except.Count != 0)
                             {
                                 double n = NormalRandom();
@@ -245,17 +248,22 @@ namespace Database
                                     (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
                                 outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
 
+<<<<<<< HEAD
+                                _databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
+                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
+=======
                                 databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
                                 databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity.ToLower() });
+>>>>>>> ab90a8368484cbb56f7ecc475e71a8dbf7396ac7
 
                                 bool userWin = true; // проверка на победу + nextLetter
                                 for (int i = outCity.Length - 1; i > 0; i--)
                                 {
                                     nextLetter = outCity[i];
-                                    if (databaseFind.ContainsKey(nextLetter))
-                                        if (databaseFind[nextLetter].Except(databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
+                                    if (_databaseFind.ContainsKey(nextLetter))
+                                        if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
                                         {
-                                            databaseUsers[id].nextLetter = nextLetter;
+                                            _databaseUsers[id].nextLetter = nextLetter;
                                             userWin = false;
                                             break;
                                         }
@@ -293,10 +301,12 @@ namespace Database
         /// <param name="city"> Город отправленный пользователем </param>
         /// <param name="id"> ID пользователя (в начале советую писать из какого он мессенджера) </param>
         /// <param name="cityIsUsed"> Был ли использован этот город пользователем ранее </param>
+        /// <param name="onLastLetter"> ответил ли пользователь на последнюю букву предыдущего слова </param>
         /// <param name="letterNumberFromEnd"> номер буквы с конца на которую бот возвращает значение (0 = ответ на последнюю букву)</param>
         /// <param name="wikiUrl"> Ссылка на википедию города</param>
         /// <param name="yandexUrl"> Ссылка на запрос в яндексе по городу</param>
         /// <param name="googleUrl"> Ссылка на запрос в гугле по городу</param>
+        /// <param name="nextLetter"> Буква на которую должен отвечать пользователь</param>
         /// <param name="mapUrl"> Ссылка на место на карте</param>
         /// <param name="coordinateCity"> Координаты города (latitude - широта, longitude - долгота)</param>
         /// <param name="photoUrl"> Ссылка на фото из города</param>
@@ -304,25 +314,128 @@ namespace Database
         /// <param name="coordinateUser"> latitude - широта, longitude - долгота</param>
         /// <param name="searchRadius"> в километрах</param>
         public static void Get(string city, string id, (double latitude, double longitude) coordinateUser, double searchRadius,
-            out bool cityIsUsed, out string outCity, out int letterNumberFromEnd, out string wikiUrl, out string yandexUrl, out string googleUrl,
-            out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
+            out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
+            out string yandexUrl, out string googleUrl, out string mapUrl, out (double latitude, double longitude) coordinateCity, out string photoUrl)
         {
+            // изначальные значения
             outCity = null;
             letterNumberFromEnd = 0;
+            onLastLetter = true;
             cityIsUsed = false;
             wikiUrl = null;
             yandexUrl = null;
             googleUrl = null;
             mapUrl = null;
             photoUrl = null;
+            nextLetter = default;
             coordinateCity.longitude = default;
             coordinateCity.latitude = default;
+
+            string[] splittedCities = city.Split();
+            if (splittedCities.Length > 1)
+            {
+                splittedCities[0] = splittedCities[0].ToLower();
+                splittedCities[1] = splittedCities[1].ToLower();
+                // если название города состоит из 2 слов
+                if (DoubleNameCities.Contains(splittedCities[0].ToLower()))
+                    city = splittedCities[0] + " " + splittedCities[1];
+                else
+                    city = splittedCities[0];
+            }
+            else
+            {
+                city = splittedCities[0];
+            }
+
+            city = city.ToLower();
+            if (_databaseCities.Contains(city))
+            {
+                outCity = "";
+                if (!_databaseUsers.ContainsKey(id))
+                    _databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
+                else
+                {
+                    if (city[0] != _databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
+                    {
+                        onLastLetter = false;
+                        return;
+                    }
+                }
+
+                if (_databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
+                {
+                    cityIsUsed = true;
+                }
+                else
+                {
+                    foreach (char c in city)
+                    {
+                        if (_databaseFind.ContainsKey(c))
+                        {
+                            List<City> except = _databaseFind[c]
+                                .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                            foreach (City city1 in except)
+                            {
+                                double alpha2 = Math.Pow((searchRadius * 180d) / (Math.PI * 6371d), 2);
+                                if (Math.Pow(city1.Latitude - coordinateUser.latitude, 2) +
+                                    Math.Pow(city1.Longitude - coordinateUser.longitude, 2) > alpha2)
+                                {
+                                    except.Remove(city1);
+                                }
+                            }
+                            if (except.Count != 0)
+                            {
+                                double n = NormalRandom();
+                                int numberOfCity =
+                                    (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
+                                outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+
+                                _databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
+                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
+
+                                bool userWin = true; // проверка на победу + nextLetter
+                                for (int i = outCity.Length - 1; i > 0; i--)
+                                {
+                                    nextLetter = outCity[i];
+                                    if (_databaseFind.ContainsKey(nextLetter))
+                                        if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
+                                        {
+                                            _databaseUsers[id].nextLetter = nextLetter;
+                                            userWin = false;
+                                            break;
+                                        }
+                                }
+
+                                if (userWin)
+                                {
+                                    outCity = "";
+                                }
+                                else
+                                {
+                                    City outCityClass = except[numberOfCity];
+                                    wikiUrl = outCityClass.WikiUrl;
+                                    yandexUrl = outCityClass.YandexUrl;
+                                    googleUrl = outCityClass.GoogleUrl;
+                                    mapUrl = outCityClass.MapUrl;
+                                    photoUrl = outCityClass.PicUrl;
+                                    coordinateCity.longitude = outCityClass.Longitude;
+                                    coordinateCity.latitude = outCityClass.Latitude;
+                                }
+                            }
+                            else
+                            {
+                                letterNumberFromEnd++;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public static string DatabaseFindToString()
         {
             string s = "";
-            foreach (KeyValuePair<char, List<City>> keyValuePair in databaseFind)
+            foreach (KeyValuePair<char, List<City>> keyValuePair in _databaseFind)
             {
                 bool first = true;
                 s += keyValuePair.Key + ": ";
@@ -345,7 +458,7 @@ namespace Database
         public static string DatabaseCitiesToString()
         {
             string s = "";
-            foreach (string city in databaseCities)
+            foreach (string city in _databaseCities)
             {
                 s += city + ", ";
             }

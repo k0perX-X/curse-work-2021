@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WhatsApp", "WhatsApp\WhatsA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{E4871070-11F2-4FD1-9CD9-5A0B401B5D8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telegram", "Telegram\Telegram.csproj", "{110748A5-1A9B-42CD-AE9D-C4B5F09D60F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telegram", "Telegram\Telegram.csproj", "{110748A5-1A9B-42CD-AE9D-C4B5F09D60F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,17 +18,11 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{314E4E67-C058-4B01-B380-85C898A5F693}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{314E4E67-C058-4B01-B380-85C898A5F693}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{314E4E67-C058-4B01-B380-85C898A5F693}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{314E4E67-C058-4B01-B380-85C898A5F693}.Release|Any CPU.Build.0 = Release|Any CPU
 		{368E48A6-2FCF-4046-B52A-BEF1A20DCFAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{368E48A6-2FCF-4046-B52A-BEF1A20DCFAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{368E48A6-2FCF-4046-B52A-BEF1A20DCFAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{368E48A6-2FCF-4046-B52A-BEF1A20DCFAE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E4871070-11F2-4FD1-9CD9-5A0B401B5D8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E4871070-11F2-4FD1-9CD9-5A0B401B5D8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4871070-11F2-4FD1-9CD9-5A0B401B5D8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E4871070-11F2-4FD1-9CD9-5A0B401B5D8A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{110748A5-1A9B-42CD-AE9D-C4B5F09D60F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{110748A5-1A9B-42CD-AE9D-C4B5F09D60F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{110748A5-1A9B-42CD-AE9D-C4B5F09D60F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
