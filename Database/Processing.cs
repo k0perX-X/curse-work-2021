@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -41,27 +42,17 @@ namespace Database
             public decimal Longitude;
 
             public static implicit operator string(City c) => c.Name;
+
+            public override string ToString() => Name;
         }
 
         private class User
         {
-            public string Id
-            {
-                get
-                {
-                    return _id;
-                }
-            }
+            public string Id => _id;
 
             private string _id;
 
-            public DateTime LastCall
-            {
-                get
-                {
-                    return _lastCall;
-                }
-            }
+            public DateTime LastCall => _lastCall;
 
             private DateTime _lastCall;
 
@@ -95,20 +86,27 @@ namespace Database
             }
         }
 
-        private class CityEqualityComparerClass : IEqualityComparer<City>
+        public class CityEqualityComparerClass : IEqualityComparer<City>
         {
             public bool Equals(City x, City y)
             {
-                return x.Name == y.Name;
+                try
+                {
+                    return String.Equals(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase);
+                }
+                catch
+                {
+                    return false;
+                }
             }
 
             public int GetHashCode([DisallowNull] City obj)
             {
-                return obj.Name.GetHashCode();
+                return obj.Name.ToLower().GetHashCode();
             }
         }
 
-        private static readonly CityEqualityComparerClass CityEqualityComparer = new CityEqualityComparerClass();
+        public static readonly CityEqualityComparerClass CityEqualityComparer = new CityEqualityComparerClass();
 
         public static void ReadCsv()
         {
@@ -137,7 +135,7 @@ namespace Database
                         GoogleUrl = csv[4],
                         YandexUrl = csv[5],
                         WikiUrl = csv[6],
-                        PicUrl = csv[7],
+                        PicUrl = csv[7].Replace("https", "http"),
                         MapUrl = csv[8],
                         Latitude = decimal.Parse(csv[9].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
                         Longitude = decimal.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture)
@@ -235,55 +233,53 @@ namespace Database
                 }
                 else
                 {
-                    foreach (char c in city)
+                    foreach (char c in city.Reverse())
                     {
-                        if (_databaseFind.ContainsKey(c))
+                        if (!_databaseFind.ContainsKey(c)) continue;
+                        List<City> except = _databaseFind[c]
+                            .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                        if (except.Count != 0)
                         {
-                            List<City> except = _databaseFind[c]
-                                .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
-                            if (except.Count != 0)
+                            int numberOfCity =
+                                (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
+                            outCity = except[numberOfCity].Name; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+
+                            _databaseUsers[id].UsedCities[city[0]].Add(new City() { Name = city });
+                            _databaseUsers[id].UsedCities[c].Add(new City() { Name = outCity.ToLower() });
+
+                            bool userWin = true; // проверка на победу + nextLetter
+                            for (int i = outCity.Length - 1; i > 0; i--)
                             {
-                                double n = NormalRandom();
-                                int numberOfCity =
-                                    (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
-                                outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+                                nextLetter = outCity[i];
+                                if (_databaseFind.ContainsKey(nextLetter))
+                                    if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
+                                    {
+                                        _databaseUsers[id].nextLetter = nextLetter;
+                                        userWin = false;
+                                        break;
+                                    }
+                            }
 
-                                _databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity.ToLower() });
-
-                                bool userWin = true; // проверка на победу + nextLetter
-                                for (int i = outCity.Length - 1; i > 0; i--)
-                                {
-                                    nextLetter = outCity[i];
-                                    if (_databaseFind.ContainsKey(nextLetter))
-                                        if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
-                                        {
-                                            _databaseUsers[id].nextLetter = nextLetter;
-                                            userWin = false;
-                                            break;
-                                        }
-                                }
-
-                                if (userWin)
-                                {
-                                    outCity = "";
-                                }
-                                else
-                                {
-                                    City outCityClass = except[numberOfCity];
-                                    wikiUrl = outCityClass.WikiUrl;
-                                    yandexUrl = outCityClass.YandexUrl;
-                                    googleUrl = outCityClass.GoogleUrl;
-                                    mapUrl = outCityClass.MapUrl;
-                                    photoUrl = outCityClass.PicUrl;
-                                    coordinateCity.longitude = outCityClass.Longitude;
-                                    coordinateCity.latitude = outCityClass.Latitude;
-                                }
+                            if (userWin)
+                            {
+                                outCity = "";
                             }
                             else
                             {
-                                letterNumberFromEnd++;
+                                City outCityClass = except[numberOfCity];
+                                wikiUrl = outCityClass.WikiUrl;
+                                yandexUrl = outCityClass.YandexUrl;
+                                googleUrl = outCityClass.GoogleUrl;
+                                mapUrl = outCityClass.MapUrl;
+                                photoUrl = outCityClass.PicUrl;
+                                coordinateCity.longitude = outCityClass.Longitude;
+                                coordinateCity.latitude = outCityClass.Latitude;
                             }
+                            break;
+                        }
+                        else
+                        {
+                            letterNumberFromEnd++;
                         }
                     }
                 }
@@ -363,64 +359,63 @@ namespace Database
                 }
                 else
                 {
-                    foreach (char c in city)
+                    foreach (char c in city.Reverse())
                     {
-                        if (_databaseFind.ContainsKey(c))
+                        if (!_databaseFind.ContainsKey(c)) continue;
+                        List<City> except = _databaseFind[c]
+                            .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                        foreach (City city1 in except)
                         {
-                            List<City> except = _databaseFind[c]
-                                .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
-                            foreach (City city1 in except)
+                            double alpha2 = Math.Pow((searchRadius * 180d) / (Math.PI * 6371d), 2);
+                            if (Math.Pow((double)(city1.Latitude - coordinateUser.latitude), 2) +
+                                Math.Pow((double)(city1.Longitude - coordinateUser.longitude), 2) > alpha2)
                             {
-                                double alpha2 = Math.Pow((searchRadius * 180d) / (Math.PI * 6371d), 2);
-                                if (Math.Pow((double)(city1.Latitude - coordinateUser.latitude), 2) +
-                                    Math.Pow((double)(city1.Longitude - coordinateUser.longitude), 2) > alpha2)
-                                {
-                                    except.Remove(city1);
-                                }
+                                except.Remove(city1);
                             }
-                            if (except.Count != 0)
+                        }
+
+                        if (except.Count != 0)
+                        {
+                            int numberOfCity =
+                                (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
+                            outCity = except[numberOfCity].Name; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+
+                            _databaseUsers[id].UsedCities[city[0]].Add(new City() { Name = city });
+                            _databaseUsers[id].UsedCities[c].Add(new City() { Name = outCity.ToLower() });
+
+                            bool userWin = true; // проверка на победу + nextLetter
+                            for (int i = outCity.Length - 1; i > 0; i--)
                             {
-                                double n = NormalRandom();
-                                int numberOfCity =
-                                    (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
-                                outCity = except[numberOfCity]; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
+                                nextLetter = outCity[i];
+                                if (_databaseFind.ContainsKey(nextLetter))
+                                    if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
+                                    {
+                                        _databaseUsers[id].nextLetter = nextLetter;
+                                        userWin = false;
+                                        break;
+                                    }
+                            }
 
-                                _databaseUsers[id].UsedCities[c].Add(new City() { Name = city });
-                                _databaseUsers[id].UsedCities[outCity.ToLower()[0]].Add(new City() { Name = outCity });
-
-                                bool userWin = true; // проверка на победу + nextLetter
-                                for (int i = outCity.Length - 1; i > 0; i--)
-                                {
-                                    nextLetter = outCity[i];
-                                    if (_databaseFind.ContainsKey(nextLetter))
-                                        if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
-                                        {
-                                            _databaseUsers[id].nextLetter = nextLetter;
-                                            userWin = false;
-                                            break;
-                                        }
-                                }
-
-                                if (userWin)
-                                {
-                                    outCity = "";
-                                }
-                                else
-                                {
-                                    City outCityClass = except[numberOfCity];
-                                    wikiUrl = outCityClass.WikiUrl;
-                                    yandexUrl = outCityClass.YandexUrl;
-                                    googleUrl = outCityClass.GoogleUrl;
-                                    mapUrl = outCityClass.MapUrl;
-                                    photoUrl = outCityClass.PicUrl;
-                                    coordinateCity.longitude = outCityClass.Longitude;
-                                    coordinateCity.latitude = outCityClass.Latitude;
-                                }
+                            if (userWin)
+                            {
+                                outCity = "";
                             }
                             else
                             {
-                                letterNumberFromEnd++;
+                                City outCityClass = except[numberOfCity];
+                                wikiUrl = outCityClass.WikiUrl;
+                                yandexUrl = outCityClass.YandexUrl;
+                                googleUrl = outCityClass.GoogleUrl;
+                                mapUrl = outCityClass.MapUrl;
+                                photoUrl = outCityClass.PicUrl;
+                                coordinateCity.longitude = outCityClass.Longitude;
+                                coordinateCity.latitude = outCityClass.Latitude;
                             }
+                            break;
+                        }
+                        else
+                        {
+                            letterNumberFromEnd++;
                         }
                     }
                 }
