@@ -5,28 +5,18 @@ namespace Database
 {
     public class Logging
     {
-        public static class Level
+        public enum LevelLogging : byte
         {
-            public static readonly LevelLogging DEBUG = new(0);
-            public static readonly LevelLogging INFO = new(1);
-            public static readonly LevelLogging ERROR = new(2);
-            public static readonly LevelLogging WARNING = new(3);
-            public static readonly LevelLogging FATAL = new(4);
-        }
-
-        public class LevelLogging
-        {
-            public LevelLogging(byte numberOfLevel) => _numberOfLevel = numberOfLevel;
-
-            private readonly byte _numberOfLevel;
-
-            public static implicit operator byte(LevelLogging d) => d._numberOfLevel;
+            DEBUG = 0,
+            INFO = 1,
+            ERROR = 2,
+            WARNING = 3,
+            FATAL = 4,
+            NOLOGGING = 5,
         }
 
         public Logging(LevelLogging levelLogging, string pathToLogFile, bool writeInConsole = false)
         {
-            if (levelLogging < 0 || levelLogging > 4)
-                levelLogging = new(1);
             _levelLogging = levelLogging;
             FileInfo fileInf = new FileInfo(pathToLogFile);
             if (!fileInf.Exists)
@@ -35,15 +25,15 @@ namespace Database
             _writeInConsole = writeInConsole;
         }
 
-        private string _pathToLogFile;
-        private int _levelLogging;
-        private bool _writeInConsole;
+        private readonly string _pathToLogFile;
+        private readonly LevelLogging _levelLogging;
+        private readonly bool _writeInConsole;
 
         public void DEBUG(string message = "")
         {
-            if (_levelLogging >= Level.DEBUG)
+            if (_levelLogging <= LevelLogging.DEBUG)
             {
-                string mes = $"{DateTime.Now.ToShortTimeString()} DEBUG: {message}";
+                string mes = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} DEBUG: {message}";
                 File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
@@ -52,9 +42,9 @@ namespace Database
 
         public void INFO(string message = "")
         {
-            if (_levelLogging >= Level.INFO)
+            if (_levelLogging <= LevelLogging.INFO)
             {
-                string mes = $"{DateTime.Now.ToShortTimeString()} INFO: {message}";
+                string mes = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} INFO: {message}";
                 File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
@@ -63,9 +53,9 @@ namespace Database
 
         public void ERROR(string message = "")
         {
-            if (_levelLogging >= Level.ERROR)
+            if (_levelLogging <= LevelLogging.ERROR)
             {
-                string mes = $"{DateTime.Now.ToShortTimeString()} ERROR: {message}";
+                string mes = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} ERROR: {message}";
                 File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
@@ -74,9 +64,9 @@ namespace Database
 
         public void WARNING(string message = "")
         {
-            if (_levelLogging >= Level.WARNING)
+            if (_levelLogging <= LevelLogging.WARNING)
             {
-                string mes = $"{DateTime.Now.ToShortTimeString()} WARNING: {message}";
+                string mes = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} WARNING: {message}";
                 File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);
@@ -85,9 +75,9 @@ namespace Database
 
         public void FATAL(string message = "")
         {
-            if (_levelLogging >= Level.FATAL)
+            if (_levelLogging <= LevelLogging.FATAL)
             {
-                string mes = $"{DateTime.Now.ToShortTimeString()} FATAL: {message}";
+                string mes = $"{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} FATAL: {message}";
                 File.AppendAllText(_pathToLogFile, mes);
                 if (_writeInConsole)
                     Console.WriteLine(mes);

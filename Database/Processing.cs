@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.Serialization.Formatters;
+using System.Threading;
 using LumenWorks.Framework.IO.Csv;
 
 namespace Database
@@ -17,7 +18,16 @@ namespace Database
         private static Dictionary<char, List<City>> _databaseFind;
         private static string[] _databaseCities;
         private static Dictionary<string, User> _databaseUsers;
-        private static readonly Random random = new Random();
+        private static readonly Random Random = new Random();
+
+        private static Timer _userTimer;
+#if DEBUG
+        private static Logging Logging = new Logging(Logging.LevelLogging.DEBUG, "Database.log", true);
+#else
+        private static Logging Logging = new Logging(Logging.LevelLogging.INFO, "Database.log", true);
+#endif
+
+        public static Dictionary<string, User> DatabaseUsers => _databaseUsers;
 
         public static Dictionary<char, List<City>> DatabaseFind => _databaseFind; //Внешний доступ к базе
 
@@ -46,30 +56,35 @@ namespace Database
             public override string ToString() => Name;
         }
 
-        private class User
+        public class User
         {
             public string Id => _id;
 
-            private string _id;
+            private readonly string _id;
 
             public DateTime LastCall => _lastCall;
 
             private DateTime _lastCall;
 
-            private Dictionary<char, List<City>> _UsedCities;
+            private Dictionary<char, List<City>> _usedCities;
 
-            public char nextLetter { get; set; }
+            public char NextLetter { get; set; }
+
+            public string OutCity { get; set; }
+
+            public byte LetterNumberFromEnd { get; set; }
 
             public Dictionary<char, List<City>> UsedCities
             {
                 get
                 {
-                    return _UsedCities;
+                    _lastCall = DateTime.Now;
+                    return _usedCities;
                 }
 
                 set
                 {
-                    _UsedCities = value;
+                    _usedCities = value;
                     _lastCall = DateTime.Now;
                 }
             }
@@ -77,12 +92,18 @@ namespace Database
             public User(string id)
             {
                 _id = id;
-                _UsedCities = new Dictionary<char, List<City>>();
+                _usedCities = new Dictionary<char, List<City>>();
                 foreach (char c1 in Enumerable.Range('а', 'я' - 'а' + 1).Select(c => (char)c))
                 {
-                    _UsedCities.Add(c1, new List<City>());
+                    _usedCities.Add(c1, new List<City>());
                 }
                 _lastCall = DateTime.Now;
+            }
+
+            public override string ToString()
+            {
+                return $"User: LastCall: {LastCall}, NextLetter: {NextLetter}, " +
+                       $"OutCity: {OutCity}, LetterNumberFromEnd: {LetterNumberFromEnd}";
             }
         }
 
@@ -107,6 +128,15 @@ namespace Database
         }
 
         public static readonly CityEqualityComparerClass CityEqualityComparer = new CityEqualityComparerClass();
+
+        public static char NextLetterUser(string id)
+        {
+            User user = _databaseUsers[id];
+            user.LetterNumberFromEnd += 1;
+            user.NextLetter = user.OutCity[^user.LetterNumberFromEnd];
+            Logging.DEBUG(user.ToString());
+            return user.NextLetter;
+        }
 
         public static void ReadCsv()
         {
@@ -148,17 +178,19 @@ namespace Database
                     _databaseCities[i] = _databaseCities[i].ToLower();
                 }
             }
+
+            _userTimer = new Timer(new TimerCallback(), null, 0, 200);
         }
 
         public static double NormalRandom(double mu = 0, double sigma = 1, double left = -1.7, double right = 1.3)
         {
-            var u1 = 1.0 - random.NextDouble();
-            var u2 = 1.0 - random.NextDouble();
+            var u1 = 1.0 - Random.NextDouble();
+            var u2 = 1.0 - Random.NextDouble();
             var rand = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
             while (!(left <= rand && rand < right))
             {
-                u1 = 1.0 - random.NextDouble();
-                u2 = 1.0 - random.NextDouble();
+                u1 = 1.0 - Random.NextDouble();
+                u2 = 1.0 - Random.NextDouble();
                 rand = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
             }
 
@@ -179,7 +211,7 @@ namespace Database
         /// <param name="photoUrl"> Ссылка на фото из города</param>
         /// <param name="outCity"> null значит города не существует в бд, "" - боту нечего отвечать </param>
         /// <param name="onLastLetter"> ответил ли пользователь на последнюю букву предыдущего слова </param>
-        public static void Get(string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
+        public static void Get(ref string city, string id, out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out byte letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (decimal latitude, decimal longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
@@ -220,7 +252,7 @@ namespace Database
                     _databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
                 else
                 {
-                    if (city[0] != _databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
+                    if (city[0] != _databaseUsers[id].NextLetter) // проверка введено ли на правильную букву
                     {
                         onLastLetter = false;
                         return;
@@ -235,7 +267,11 @@ namespace Database
                 {
                     foreach (char c in city.Reverse())
                     {
-                        if (!_databaseFind.ContainsKey(c)) continue;
+                        if (!_databaseFind.ContainsKey(c))
+                        {
+                            letterNumberFromEnd++;
+                            continue;
+                        }
                         List<City> except = _databaseFind[c]
                             .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                         if (except.Count != 0)
@@ -254,7 +290,9 @@ namespace Database
                                 if (_databaseFind.ContainsKey(nextLetter))
                                     if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
                                     {
-                                        _databaseUsers[id].nextLetter = nextLetter;
+                                        _databaseUsers[id].NextLetter = nextLetter;
+                                        _databaseUsers[id].OutCity = outCity;
+                                        _databaseUsers[id].LetterNumberFromEnd = letterNumberFromEnd;
                                         userWin = false;
                                         break;
                                     }
@@ -304,8 +342,8 @@ namespace Database
         /// <param name="outCity"> null значит города не существует в бд, '' - все города отгаданы</param>
         /// <param name="coordinateUser"> latitude - широта, longitude - долгота</param>
         /// <param name="searchRadius"> в километрах</param>
-        public static void Get(string city, string id, (decimal latitude, decimal longitude) coordinateUser, double searchRadius,
-            out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd, out string wikiUrl,
+        public static void Get(ref string city, string id, (decimal latitude, decimal longitude) coordinateUser, double searchRadius,
+            out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out byte letterNumberFromEnd, out string wikiUrl,
             out string yandexUrl, out string googleUrl, out string mapUrl, out (decimal latitude, decimal longitude) coordinateCity, out string photoUrl)
         {
             // изначальные значения
@@ -346,7 +384,7 @@ namespace Database
                     _databaseUsers.Add(id, new User(id)); // Если человека нет в базе пользователей
                 else
                 {
-                    if (city[0] != _databaseUsers[id].nextLetter) // проверка введено ли на правильную букву
+                    if (city[0] != _databaseUsers[id].NextLetter) // проверка введено ли на правильную букву
                     {
                         onLastLetter = false;
                         return;
@@ -361,7 +399,11 @@ namespace Database
                 {
                     foreach (char c in city.Reverse())
                     {
-                        if (!_databaseFind.ContainsKey(c)) continue;
+                        if (!_databaseFind.ContainsKey(c))
+                        {
+                            letterNumberFromEnd++;
+                            continue;
+                        }
                         List<City> except = _databaseFind[c]
                             .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
                         foreach (City city1 in except)
@@ -390,7 +432,9 @@ namespace Database
                                 if (_databaseFind.ContainsKey(nextLetter))
                                     if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
                                     {
-                                        _databaseUsers[id].nextLetter = nextLetter;
+                                        _databaseUsers[id].NextLetter = nextLetter;
+                                        _databaseUsers[id].OutCity = outCity;
+                                        _databaseUsers[id].LetterNumberFromEnd = letterNumberFromEnd;
                                         userWin = false;
                                         break;
                                     }
