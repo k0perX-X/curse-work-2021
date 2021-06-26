@@ -13,7 +13,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
-    public class Program
+    public static class Program
     {
 #if DEBUG
         private static readonly Logging Logging = new Logging(Logging.LevelLogging.DEBUG, "Telegram.log", true);
@@ -34,7 +34,19 @@ namespace TelegramBot
 
             _botClient.OnMessage += Bot_OnMessage;
             _botClient.OnMessageEdited += Bot_OnMessage;
-            _botClient.OnCallbackQuery += async (sender, e) =>
+            _botClient.OnCallbackQuery += Bot_InlineKeyboardButton;
+
+            Processing.TelegramUserTimerMinute += EveryMinuteEvent;
+
+            _botClient.StartReceiving();
+            while (Console.ReadLine() != "exit") { }
+
+            _botClient.CloseAsync();
+        }
+
+        private static void Bot_InlineKeyboardButton(object sender, CallbackQueryEventArgs e)
+        {
+            try
             {
                 var s = e.CallbackQuery.Data.Split("|");
                 if (s.Length > 0)
@@ -47,13 +59,39 @@ namespace TelegramBot
                         case "NextLetter":
                             Bot_NextLetter(s, sender, e);
                             break;
+
+                        case "Restart":
+                            Processing.DeleteUser(s[1]);
+                            Bot_StartCommand(sender, new MessageEventArgs(e.CallbackQuery.Message));
+                            break;
                     }
-            };
+            }
+            catch (Exception exception)
+            {
+                var s = $"Bot_InlineKeyboardButton - e.Message.Text: {e.CallbackQuery.Message.Text} - e.Message.Chat.Id: {e.CallbackQuery.Message.Chat.Id} - {exception}";
+                Logging.ERROR(s);
+            }
+        }
 
-            _botClient.StartReceiving();
-            while (Console.ReadLine() != "exit") { }
-
-            _botClient.CloseAsync();
+        private static async void EveryMinuteEvent(string ID, Processing.User user, DateTime currentTime)
+        {
+            if (user.LastCall > currentTime.AddHours(6 * Math.Pow(2, user.RequestsToContinueGame)) && user.RequestsToContinueGame < 4)
+            {
+                try
+                {
+                    await _botClient.SendTextMessageAsync(
+                        chatId: ID.Replace("Telegram.", ""),
+                        text: $"Нашему боту скучно, поиграйте с ним.\nВам на букву {user.NextLetter}",
+                        disableNotification: true
+                    );
+                }
+                catch (Exception exception)
+                {
+                    var message = $"EveryMinuteEvent - ID: {ID} - User {user} - {exception}";
+                    Logging.ERROR(message);
+                }
+                user.RequestsToContinueGame++;
+            }
         }
 
         private static async void Bot_MoreCityInfo(string[] s, object sender, CallbackQueryEventArgs e)
@@ -98,7 +136,108 @@ namespace TelegramBot
             }
         }
 
-        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
+        private static void Bot_OnMessage(object sender, MessageEventArgs e)
+        {
+            try
+            {
+                switch (e.Message.Text[0])
+                {
+                    case '/':
+                        Bot_Commands(sender, e);
+                        break;
+
+                    default:
+                        Bot_Get(sender, e);
+                        break;
+                }
+            }
+            catch (Exception exception)
+            {
+                var s = $"Bot_OnMessage - e.Message.Text: {e.Message.Text} - e.Message.Chat.Id: {e.Message.Chat.Id} - {exception}";
+                Logging.ERROR(s);
+            }
+        }
+
+        private static void Bot_Commands(object sender, MessageEventArgs e)
+        {
+            try
+            {
+                string s = e.Message.Text.Replace("/", "").Split()[0];
+                switch (s)
+                {
+                    case "start":
+                        Bot_StartCommand(sender, e);
+                        break;
+
+                    case "restart":
+                        Bot_RestartCommand(sender, e);
+                        break;
+                }
+            }
+            catch (IndexOutOfRangeException exception) { }
+            catch (Exception exception)
+            {
+                var s = $"Bot_Commands - e.Message.Text: {e.Message.Text} - e.Message.Chat.Id: {e.Message.Chat.Id} - {exception}";
+                Logging.ERROR(s);
+            }
+        }
+
+        private static async void Bot_StartCommand(object sender, MessageEventArgs e)
+        {
+            if (Processing.DatabaseUsers.ContainsKey("Telegram." + e.Message.Chat.Id.ToString()))
+            {
+                Bot_RestartCommand(sender, e);
+            }
+            else
+            {
+                try
+                {
+                    await _botClient.SendTextMessageAsync(
+                        chatId: e.Message.Chat,
+                        text: $"Введите первый город" // TODO написать приветствие
+                    );
+                }
+                catch (Exception exception)
+                {
+                    var s = $"Bot_StartCommand - e.Message.Text: {e.Message.Text} - e.Message.Chat.Id: {e.Message.Chat.Id} - {exception}";
+                    Logging.ERROR(s);
+                }
+            }
+        }
+
+        private static async void Bot_RestartCommand(object sender, MessageEventArgs e)
+        {
+            if (!Processing.DatabaseUsers.ContainsKey("Telegram." + e.Message.Chat.Id.ToString()))
+            {
+                Bot_StartCommand(sender, e);
+            }
+            else
+            {
+                try
+                {
+                    await _botClient.SendTextMessageAsync(
+                        chatId: e.Message.Chat.Id,
+                        text: $"Вы точно хотите начать игру заново?",
+                        replyMarkup: new InlineKeyboardMarkup(
+                            new List<List<InlineKeyboardButton>>
+                            {
+                                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData("Да",
+                                        $"Restart|{"Telegram." + e.Message.Chat.Id.ToString()}"),
+                                },
+                            })
+                    );
+                }
+                catch (Exception exception)
+                {
+                    var s = $"Bot_RestartCommand - e.Message.Text: {e.Message.Text} - e.Message.Chat.Id: {e.Message.Chat.Id} - {exception}";
+                    Logging.ERROR(s);
+                }
+            }
+        }
+
+        private static async void Bot_Get(object sender, MessageEventArgs e)
         {
             if (e.Message.Text != null)
             {
@@ -153,7 +292,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города, попробуйте ещё раз",
+                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города. Ваша буква {nextLetter}.",
                                 replyMarkup: new InlineKeyboardMarkup(
                                     new List<List<InlineKeyboardButton>>
                                     {
@@ -169,7 +308,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города, попробуйте ещё раз"
+                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города. Ваша буква {nextLetter}."
                             );
                         }
                     }
@@ -188,7 +327,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву",
+                                text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву.",
                                 replyMarkup: new InlineKeyboardMarkup(
                                     new List<List<InlineKeyboardButton>>
                                     {
@@ -204,7 +343,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву"
+                                text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву."
                             );
                         }
                     }
@@ -212,7 +351,7 @@ namespace TelegramBot
                     {
                         await _botClient.SendTextMessageAsync(
                             chatId: e.Message.Chat,
-                            text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву"
+                            text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву."
                         );
                     }
                     catch (Exception exception)
@@ -348,11 +487,6 @@ namespace TelegramBot
                     }
                 }
             }
-        }
-
-        ~Program()
-        {
-            _botClient.CloseAsync();
         }
     }
 }

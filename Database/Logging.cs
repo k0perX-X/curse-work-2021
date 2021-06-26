@@ -9,8 +9,8 @@ namespace Database
         {
             DEBUG = 0,
             INFO = 1,
-            ERROR = 2,
-            WARNING = 3,
+            WARNING = 2,
+            ERROR = 3,
             FATAL = 4,
             NOLOGGING = 5,
         }

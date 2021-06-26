@@ -19,13 +19,17 @@ namespace Database
         private static string[] _databaseCities;
         private static Dictionary<string, User> _databaseUsers;
         private static readonly Random Random = new Random();
-
         private static Timer _userTimer;
+
 #if DEBUG
         private static Logging Logging = new Logging(Logging.LevelLogging.DEBUG, "Database.log", true);
 #else
         private static Logging Logging = new Logging(Logging.LevelLogging.INFO, "Database.log", true);
 #endif
+
+        public delegate void TelegramUserTimerMinuteDelegate(string ID, User user, DateTime currentTime);
+
+        public static event TelegramUserTimerMinuteDelegate TelegramUserTimerMinute;
 
         public static Dictionary<string, User> DatabaseUsers => _databaseUsers;
 
@@ -74,17 +78,21 @@ namespace Database
 
             public byte LetterNumberFromEnd { get; set; }
 
+            public byte RequestsToContinueGame { get; set; }
+
             public Dictionary<char, List<City>> UsedCities
             {
                 get
                 {
                     _lastCall = DateTime.Now;
+                    RequestsToContinueGame = 0;
                     return _usedCities;
                 }
 
                 set
                 {
                     _usedCities = value;
+                    RequestsToContinueGame = 0;
                     _lastCall = DateTime.Now;
                 }
             }
@@ -103,7 +111,8 @@ namespace Database
             public override string ToString()
             {
                 return $"User: LastCall: {LastCall}, NextLetter: {NextLetter}, " +
-                       $"OutCity: {OutCity}, LetterNumberFromEnd: {LetterNumberFromEnd}";
+                       $"OutCity: {OutCity}, LetterNumberFromEnd: {LetterNumberFromEnd}, " +
+                       $"RequestsToContinueGame {RequestsToContinueGame}";
             }
         }
 
@@ -133,7 +142,7 @@ namespace Database
         {
             User user = _databaseUsers[id];
             user.LetterNumberFromEnd += 1;
-            user.NextLetter = user.OutCity[^user.LetterNumberFromEnd];
+            user.NextLetter = user.OutCity[^(user.LetterNumberFromEnd + 1)];
             Logging.DEBUG(user.ToString());
             return user.NextLetter;
         }
@@ -179,7 +188,30 @@ namespace Database
                 }
             }
 
-            _userTimer = new Timer(new TimerCallback(), null, 0, 200);
+            _userTimer = new Timer(On_userTimer, null, 0, 60000);
+        }
+
+        private static void On_userTimer(object state)
+        {
+            foreach (KeyValuePair<string, User> databaseUser in _databaseUsers)
+            {
+                var s = databaseUser.Key.Split(".");
+                var currentTime = DateTime.Now;
+                switch (s[0])
+                {
+                    case "Telegram":
+                        TelegramUserTimerMinute?.Invoke(databaseUser.Key, databaseUser.Value, currentTime);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+        public static void DeleteUser(string id)
+        {
+            _databaseUsers.Remove(id);
         }
 
         public static double NormalRandom(double mu = 0, double sigma = 1, double left = -1.7, double right = 1.3)
