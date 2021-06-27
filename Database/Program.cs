@@ -15,9 +15,9 @@ namespace Database
 
             while (s.Split()[0] != "exit")
             {
-                Processing.Get(s, "Test", out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out int letterNumberFromEnd,
+                Processing.Get(ref s, "Test", out bool onLastLetter, out bool cityIsUsed, out string outCity, out char nextLetter, out byte letterNumberFromEnd,
                     out string wikiUrl, out string yandexUrl, out string googleUrl, out string mapUrl,
-                    out (double latitude, double longitude) coordinateCity, out string photoUrl);
+                    out (decimal latitude, decimal longitude) coordinateCity, out string photoUrl);
                 Console.WriteLine(
                     $"onLastLetter {onLastLetter}, cityIsUsed {cityIsUsed}, outCity {outCity}, nextLetter {nextLetter}, letterNumberFromEnd {letterNumberFromEnd}, wikiUrl {wikiUrl}, " +
                     $"yandexUrl {yandexUrl}, googleUrl {googleUrl}, mapUrl {mapUrl}, coordinateCity.latitude {coordinateCity.latitude}, " +
