@@ -304,7 +304,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города. Ваша буква {nextLetter}.",
+                                text: $"Город {e.Message.Text} начинается не на требуемую букву предыдущего города. Ваша буква {nextLetter}.",
                                 replyMarkup: new InlineKeyboardMarkup(
                                     new List<List<InlineKeyboardButton>>
                                     {
@@ -320,7 +320,7 @@ namespace TelegramBot
                         {
                             await _botClient.SendTextMessageAsync(
                                 chatId: e.Message.Chat,
-                                text: $"Город {e.Message.Text} начинается не на последнюю букву предыдущего города. Ваша буква {nextLetter}."
+                                text: $"Город {e.Message.Text} начинается не на требуемую букву предыдущего города. Ваша буква {nextLetter}."
                             );
                         }
                     }
