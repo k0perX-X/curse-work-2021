@@ -61,8 +61,7 @@ namespace TelegramBot
                             break;
 
                         case "Restart":
-                            Processing.DeleteUser(s[1]);
-                            Bot_StartCommand(sender, new MessageEventArgs(e.CallbackQuery.Message));
+                            Bot_RestartUser(s, sender, e);
                             break;
                     }
             }
@@ -71,6 +70,12 @@ namespace TelegramBot
                 var s = $"Bot_InlineKeyboardButton - e.Message.Text: {e.CallbackQuery.Message.Text} - e.Message.Chat.Id: {e.CallbackQuery.Message.Chat.Id} - {exception}";
                 Logging.ERROR(s);
             }
+        }
+
+        private static void Bot_RestartUser(string[] s, object sender, CallbackQueryEventArgs e)
+        {
+            Processing.DeleteUser(s[1]);
+            Bot_StartCommand(sender, new MessageEventArgs(e.CallbackQuery.Message));
         }
 
         private static async void EveryMinuteEvent(string ID, Processing.User user, DateTime currentTime)
@@ -108,7 +113,7 @@ namespace TelegramBot
                 );
                 await _botClient.SendTextMessageAsync(
                     chatId: e.CallbackQuery.Message.Chat.Id,
-                    text: $"",
+                    text: city.WikiSummary,
                     parseMode: ParseMode.Html
                 );
             }
@@ -194,7 +199,14 @@ namespace TelegramBot
                 {
                     await _botClient.SendTextMessageAsync(
                         chatId: e.Message.Chat,
-                        text: $"Введите первый город" // TODO написать приветствие
+                        text: "Приветствую! Наш бот предлагает вам сыграть в города!\n" +
+                              "Правила игры: игра, в которой каждый участник в свою " +
+                              "очередь называет реально существующий город России, " +
+                              "название которого начинается на ту букву, которой " +
+                              "оканчивается название предыдущего города(если это возможно), " +
+                              "если города на эту букву кончились или не существуют, " +
+                              "то берется следующая по счету с конца буквы предыдущего города.\n" +
+                              "Введите первый город на любую букву."
                     );
                 }
                 catch (Exception exception)
@@ -351,7 +363,7 @@ namespace TelegramBot
                     {
                         await _botClient.SendTextMessageAsync(
                             chatId: e.Message.Chat,
-                            text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву."
+                            text: $"Город {e.Message.Text} не найден в базе данных."
                         );
                     }
                     catch (Exception exception)
@@ -364,21 +376,19 @@ namespace TelegramBot
                 {
                     try
                     {
-                        if (wikiUrl != null)
-                        {
-                            await _botClient.SendChatActionAsync(
+                        await _botClient.SendChatActionAsync(
+                            chatId: e.Message.Chat.Id,
+                            chatAction: ChatAction.UploadPhoto
+                        );
+                        await _botClient.SendPhotoAsync(
                                 chatId: e.Message.Chat.Id,
-                                chatAction: ChatAction.UploadPhoto
-                            );
-                            await _botClient.SendPhotoAsync(
-                                    chatId: e.Message.Chat.Id,
-                                    caption: $"<b>{outCity}</b>",
-                                    parseMode: ParseMode.Html,
-                                    photo: photoUrl,
-                                    replyToMessageId: e.Message.MessageId,
-                                    replyMarkup: new InlineKeyboardMarkup(
-                                        new List<List<InlineKeyboardButton>>
-                                        {
+                                caption: $"<b>{outCity}</b>",
+                                parseMode: ParseMode.Html,
+                                photo: photoUrl,
+                                replyToMessageId: e.Message.MessageId,
+                                replyMarkup: new InlineKeyboardMarkup(
+                                    new List<List<InlineKeyboardButton>>
+                                    {
                                             new List<InlineKeyboardButton>
                                             {
                                                 InlineKeyboardButton.WithUrl("Википедия", wikiUrl),
@@ -390,52 +400,21 @@ namespace TelegramBot
                                                 InlineKeyboardButton.WithCallbackData("Больше информации о городе",
                                                     $"More|{outCity}")
                                             },
-                                        })
-                                    );
-                        }
-                        else
-                        {
-                            await _botClient.SendChatActionAsync(
-                                chatId: e.Message.Chat.Id,
-                                chatAction: ChatAction.UploadPhoto
-                            );
-                            await _botClient.SendPhotoAsync(
-                                chatId: e.Message.Chat.Id,
-                                caption: $"<b>{outCity}</b>",
-                                parseMode: ParseMode.Html,
-                                photo: photoUrl,
-                                replyToMessageId: e.Message.MessageId,
-                                replyMarkup: new InlineKeyboardMarkup(
-                                    new List<List<InlineKeyboardButton>>
-                                    {
-                                        new List<InlineKeyboardButton>
-                                        {
-                                            InlineKeyboardButton.WithUrl("Google", googleUrl),
-                                            InlineKeyboardButton.WithUrl("Яндекс", yandexUrl)
-                                        },
-                                        new List<InlineKeyboardButton>
-                                        {
-                                            InlineKeyboardButton.WithCallbackData("Больше информации о городе",
-                                                $"More|{outCity}")
-                                        },
                                     })
-                            );
-                        }
+                                );
                     }
                     catch (Telegram.Bot.Exceptions.ApiRequestException)
                     {
                         try
                         {
-                            if (wikiUrl != null)
-                            {
-                                await _botClient.SendTextMessageAsync(
-                                    chatId: e.Message.Chat,
-                                    text: $"<b>{outCity}</b>",
-                                    parseMode: ParseMode.Html,
-                                    replyToMessageId: e.Message.MessageId,
-                                    replyMarkup: new InlineKeyboardMarkup(
-                                        new List<List<InlineKeyboardButton>>
-                                        {
+                            await _botClient.SendTextMessageAsync(
+                                chatId: e.Message.Chat,
+                                text: $"<b>{outCity}</b>",
+                                parseMode: ParseMode.Html,
+                                replyToMessageId: e.Message.MessageId,
+                                replyMarkup: new InlineKeyboardMarkup(
+                                    new List<List<InlineKeyboardButton>>
+                                    {
                                                 new List<InlineKeyboardButton>
                                                 {
                                                     InlineKeyboardButton.WithUrl("Википедия", wikiUrl),
@@ -447,32 +426,8 @@ namespace TelegramBot
                                                     InlineKeyboardButton.WithCallbackData("Больше информации о городе",
                                                         $"More|{outCity}")
                                                 },
-                                        })
-                                );
-                            }
-                            else
-                            {
-                                await _botClient.SendTextMessageAsync(
-                                    chatId: e.Message.Chat,
-                                    text: $"<b>{outCity}</b>",
-                                    parseMode: ParseMode.Html,
-                                    replyToMessageId: e.Message.MessageId,
-                                    replyMarkup: new InlineKeyboardMarkup(
-                                        new List<List<InlineKeyboardButton>>
-                                        {
-                                                new List<InlineKeyboardButton>
-                                                {
-                                                    InlineKeyboardButton.WithUrl("Google", googleUrl),
-                                                    InlineKeyboardButton.WithUrl("Яндекс", yandexUrl)
-                                                },
-                                                new List<InlineKeyboardButton>
-                                                {
-                                                    InlineKeyboardButton.WithCallbackData("Больше информации о городе",
-                                                        $"More|{outCity}")
-                                                },
-                                        })
-                                );
-                            }
+                                    })
+                            );
                         }
                         catch (Exception exception)
                         {

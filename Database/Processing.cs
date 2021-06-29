@@ -54,6 +54,7 @@ namespace Database
             public string MapUrl;
             public decimal Latitude;
             public decimal Longitude;
+            public string WikiSummary;
 
             public static implicit operator string(City c) => c.Name;
 
@@ -141,9 +142,11 @@ namespace Database
         public static char NextLetterUser(string id)
         {
             User user = _databaseUsers[id];
-            user.LetterNumberFromEnd += 1;
-            user.NextLetter = user.OutCity[^(user.LetterNumberFromEnd + 1)];
-            Logging.DEBUG(user.ToString());
+            if (user.LetterNumberFromEnd < user.OutCity.Length)
+            {
+                user.NextLetter = user.OutCity[^(++user.LetterNumberFromEnd)];
+                Logging.DEBUG(user.ToString());
+            }
             return user.NextLetter;
         }
 
@@ -177,7 +180,8 @@ namespace Database
                         PicUrl = csv[7].Replace("https", "http"),
                         MapUrl = csv[8],
                         Latitude = decimal.Parse(csv[9].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
-                        Longitude = decimal.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture)
+                        Longitude = decimal.Parse(csv[10].Replace(".", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator), CultureInfo.InvariantCulture),
+                        WikiSummary = csv[11]
                     });
                     cities.Add(csv[2]);
                 }
