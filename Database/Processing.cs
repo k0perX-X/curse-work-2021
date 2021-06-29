@@ -142,9 +142,11 @@ namespace Database
         public static char NextLetterUser(string id)
         {
             User user = _databaseUsers[id];
-            user.LetterNumberFromEnd += 1;
-            user.NextLetter = user.OutCity[^(user.LetterNumberFromEnd + 1)];
-            Logging.DEBUG(user.ToString());
+            if (user.LetterNumberFromEnd < user.OutCity.Length)
+            {
+                user.NextLetter = user.OutCity[^(++user.LetterNumberFromEnd)];
+                Logging.DEBUG(user.ToString());
+            }
             return user.NextLetter;
         }
 

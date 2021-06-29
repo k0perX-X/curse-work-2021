@@ -61,8 +61,7 @@ namespace TelegramBot
                             break;
 
                         case "Restart":
-                            Processing.DeleteUser(s[1]);
-                            Bot_StartCommand(sender, new MessageEventArgs(e.CallbackQuery.Message));
+                            Bot_RestartUser(s, sender, e);
                             break;
                     }
             }
@@ -71,6 +70,12 @@ namespace TelegramBot
                 var s = $"Bot_InlineKeyboardButton - e.Message.Text: {e.CallbackQuery.Message.Text} - e.Message.Chat.Id: {e.CallbackQuery.Message.Chat.Id} - {exception}";
                 Logging.ERROR(s);
             }
+        }
+
+        private static void Bot_RestartUser(string[] s, object sender, CallbackQueryEventArgs e)
+        {
+            Processing.DeleteUser(s[1]);
+            Bot_StartCommand(sender, new MessageEventArgs(e.CallbackQuery.Message));
         }
 
         private static async void EveryMinuteEvent(string ID, Processing.User user, DateTime currentTime)
@@ -200,7 +205,8 @@ namespace TelegramBot
                               "название которого начинается на ту букву, которой " +
                               "оканчивается название предыдущего города(если это возможно), " +
                               "если города на эту букву кончились или не существуют, " +
-                              "то берется следующая по счету с конца буквы предыдущего города"
+                              "то берется следующая по счету с конца буквы предыдущего города.\n" +
+                              "Введите первый город на любую букву."
                     );
                 }
                 catch (Exception exception)
@@ -357,7 +363,7 @@ namespace TelegramBot
                     {
                         await _botClient.SendTextMessageAsync(
                             chatId: e.Message.Chat,
-                            text: $"Город {e.Message.Text} не найден в базе данных, попробуйте ввести другой город на эту же букву."
+                            text: $"Город {e.Message.Text} не найден в базе данных."
                         );
                     }
                     catch (Exception exception)
