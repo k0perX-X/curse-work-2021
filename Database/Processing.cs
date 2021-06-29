@@ -77,7 +77,7 @@ namespace Database
 
             public string OutCity { get; set; }
 
-            public byte LetterNumberFromEnd { get; set; }
+            public byte LetterNumberFromEndOutCity { get; set; }
 
             public byte RequestsToContinueGame { get; set; }
 
@@ -112,7 +112,7 @@ namespace Database
             public override string ToString()
             {
                 return $"User: LastCall: {LastCall}, NextLetter: {NextLetter}, " +
-                       $"OutCity: {OutCity}, LetterNumberFromEnd: {LetterNumberFromEnd}, " +
+                       $"OutCity: {OutCity}, LetterNumberFromEndOutCity: {LetterNumberFromEndOutCity}, " +
                        $"RequestsToContinueGame {RequestsToContinueGame}";
             }
         }
@@ -142,9 +142,16 @@ namespace Database
         public static char NextLetterUser(string id)
         {
             User user = _databaseUsers[id];
-            if (user.LetterNumberFromEnd < user.OutCity.Length)
+            if (user.LetterNumberFromEndOutCity < user.OutCity.Length)
             {
-                user.NextLetter = user.OutCity[^(++user.LetterNumberFromEnd)];
+                while (true)
+                {
+                    user.LetterNumberFromEndOutCity++;
+                    user.NextLetter = user.OutCity.ToLower()[^user.LetterNumberFromEndOutCity];
+                    if (_databaseFind.ContainsKey(user.NextLetter))
+                        if (_databaseFind[user.NextLetter].Except(user.UsedCities[user.NextLetter], CityEqualityComparer).Any())
+                            break;
+                }
                 Logging.DEBUG(user.ToString());
             }
             return user.NextLetter;
@@ -295,7 +302,9 @@ namespace Database
                     }
                 }
 
-                if (_databaseUsers[id].UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
+                User user = _databaseUsers[id];
+
+                if (user.UsedCities[city[0]].Contains(new City() { Name = city }, CityEqualityComparer)) // проверка на использованность города
                 {
                     cityIsUsed = true;
                 }
@@ -309,26 +318,26 @@ namespace Database
                             continue;
                         }
                         List<City> except = _databaseFind[c]
-                            .Except(_databaseUsers[id].UsedCities[c], CityEqualityComparer).ToList();
+                            .Except(user.UsedCities[c], CityEqualityComparer).ToList();
                         if (except.Count != 0)
                         {
                             int numberOfCity =
                                 (int)Math.Round((NormalRandom() - 1d / (except.Count * 2)) * except.Count);
                             outCity = except[numberOfCity].Name; // используется смещенное нормальное распределение чтобы давать более редкие города чаще
 
-                            _databaseUsers[id].UsedCities[city[0]].Add(new City() { Name = city });
-                            _databaseUsers[id].UsedCities[c].Add(new City() { Name = outCity.ToLower() });
+                            user.UsedCities[city[0]].Add(new City() { Name = city });
+                            user.UsedCities[c].Add(new City() { Name = outCity.ToLower() });
 
                             bool userWin = true; // проверка на победу + nextLetter
                             for (int i = outCity.Length - 1; i > 0; i--)
                             {
                                 nextLetter = outCity[i];
                                 if (_databaseFind.ContainsKey(nextLetter))
-                                    if (_databaseFind[nextLetter].Except(_databaseUsers[id].UsedCities[nextLetter], CityEqualityComparer).Any())
+                                    if (_databaseFind[nextLetter].Except(user.UsedCities[nextLetter], CityEqualityComparer).Any())
                                     {
-                                        _databaseUsers[id].NextLetter = nextLetter;
-                                        _databaseUsers[id].OutCity = outCity;
-                                        _databaseUsers[id].LetterNumberFromEnd = letterNumberFromEnd;
+                                        user.NextLetter = nextLetter;
+                                        user.OutCity = outCity;
+                                        user.LetterNumberFromEndOutCity = (byte)(outCity.Length - i);
                                         userWin = false;
                                         break;
                                     }
@@ -470,7 +479,7 @@ namespace Database
                                     {
                                         _databaseUsers[id].NextLetter = nextLetter;
                                         _databaseUsers[id].OutCity = outCity;
-                                        _databaseUsers[id].LetterNumberFromEnd = letterNumberFromEnd;
+                                        _databaseUsers[id].LetterNumberFromEndOutCity = letterNumberFromEnd;
                                         userWin = false;
                                         break;
                                     }
