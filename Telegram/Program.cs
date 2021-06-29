@@ -372,6 +372,24 @@ namespace TelegramBot
                         Logging.ERROR(s);
                     }
                 }
+                else if (outCity == "")
+                {
+                    try
+                    {
+                        await _botClient.SendTextMessageAsync(
+                            chatId: e.Message.Chat,
+                            text: "Вы выиграли! Игра начнется заново."
+                        );
+                        Processing.DeleteUser("Telegram." + e.Message.Chat.Id.ToString());
+                        Bot_StartCommand(sender, e);
+                    }
+                    catch (Exception exception)
+                    {
+                        var s =
+                            $"OutCity\"\" - e.Message.Text: {e.Message.Text} - e.Message.Chat.Id: {e.Message.Chat.Id} - {exception}";
+                        Logging.ERROR(s);
+                    }
+                }
                 else
                 {
                     try
