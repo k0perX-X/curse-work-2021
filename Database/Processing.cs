@@ -298,6 +298,7 @@ namespace Database
                     if (city[0] != _databaseUsers[id].NextLetter) // проверка введено ли на правильную букву
                     {
                         onLastLetter = false;
+                        nextLetter = _databaseUsers[id].NextLetter;
                         return;
                     }
                 }
